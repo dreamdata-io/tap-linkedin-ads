@@ -1,12 +1,10 @@
 import urllib.parse
-from datetime import datetime, timedelta
+import datetime
+from datetime import timedelta
 import singer
 from singer import (
     metrics,
-    metadata,
-    Transformer,
     utils,
-    UNIX_MILLISECONDS_INTEGER_DATETIME_PARSING,
 )
 from singer.utils import strptime_to_utc, strftime
 from tap_linkedin_ads.transform import transform_json
@@ -37,6 +35,20 @@ def write_bookmark(state, stream, value):
     singer.write_state(state)
 
 
+def unixseconds_to_datetime(ms: str) -> datetime.datetime:
+    try:
+
+        ms = int(ms)
+    except ValueError:
+        return strptime_to_utc(ms)
+
+    return (
+        datetime.datetime.fromtimestamp(ms / 1000.0, datetime.timezone.utc)
+        if ms
+        else None
+    )
+
+
 def process_records(
     stream_name,
     records,
@@ -56,11 +68,7 @@ def process_records(
 
                 # Reset max_bookmark_value to new value if higher
             if bookmark_field and (bookmark_field in record):
-                if bookmark_field and (bookmark_field in transformed_record):
-                    if max_bookmark_value is None or strptime_to_utc(
-                        transformed_record[bookmark_field]
-                    ) > strptime_to_utc(max_bookmark_value):
-                        max_bookmark_value = transformed_record[bookmark_field]
+                bookmark_value = unixseconds_to_datetime(record[bookmark_field])
 
                 if max_bookmark_value is None or bookmark_value > max_bookmark_value:
                     max_bookmark_value = bookmark_value
@@ -97,7 +105,7 @@ def sync_endpoint(
 
     # Get the latest bookmark for the stream and set the last_datetime
     last_datetime = get_bookmark(state, stream_name, start_date)
-    max_bookmark_value = last_datetime
+    max_bookmark_value = strptime_to_utc(last_datetime)
     LOGGER.info(
         "{}: bookmark last_datetime = {}".format(stream_name, max_bookmark_value)
     )
