@@ -94,43 +94,41 @@ def raise_for_error(response):
 
 
 class LinkedinClient(object):
-    def __init__(self, access_token, user_agent=None):
-        self.__access_token = access_token
+    def __init__(self, client_id, client_secret, refresh_token, user_agent=None):
+        self.__refresh_token = refresh_token
+        self.__access_token = None
         self.__user_agent = user_agent
         self.__session = requests.Session()
         self.__base_url = None
-        self.__verified = False
+        self.__client_id = client_id
+        self.__client_secret = client_secret
 
     def __enter__(self):
-        self.__verified = self.check_access_token()
+        self.get_access_token(
+            self.__client_id, self.__client_secret, self.__refresh_token
+        )
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.__session.close()
 
-    @backoff.on_exception(backoff.expo, Server5xxError, max_tries=5, factor=2)
-    def check_access_token(self):
-        if self.__access_token is None:
-            raise Exception("Error: Missing access_token.")
-        headers = {}
-        if self.__user_agent:
-            headers["User-Agent"] = self.__user_agent
-        headers["Authorization"] = "Bearer {}".format(self.__access_token)
-        headers["Accept"] = "application/json"
-        response = self.__session.get(
-            # Simple endpoint that returns 1 Account record (to check API/token access):
-            url="https://api.linkedin.com/v2/adAccountsV2?q=search&start=0&count=1",
-            headers=headers,
+    def get_access_token(self, client_id, client_secret, refresh_token):
+        resp = self.__session.post(
+            "https://www.linkedin.com/oauth/v2/accessToken",
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": client_id,
+                "client_secret": client_secret,
+            },
         )
-        if response.status_code != 200:
-            LOGGER.error("Error status_code = {}".format(response.status_code))
-            raise_for_error(response)
-        else:
-            resp = response.json()
-            if "elements" in resp:
-                return True
-            else:
-                return False
+
+        resp.raise_for_status()
+        data = resp.json()
+
+        self.__access_token = data["access_token"]
+
+        return self.__access_token
 
     @backoff.on_exception(
         backoff.expo,
@@ -139,9 +137,6 @@ class LinkedinClient(object):
         factor=2,
     )
     def request(self, method, url=None, path=None, **kwargs):
-        if not self.__verified:
-            self.__verified = self.check_access_token()
-
         if not url and self.__base_url is None:
             self.__base_url = "https://api.linkedin.com/v2"
 
