@@ -54,11 +54,13 @@ ERROR_CODE_EXCEPTION_MAPPING = {
     403: LinkedInForbiddenError,
     404: LinkedInNotFoundError,
     409: LinkedInForbiddenError,
-    500: LinkedInInternalServiceError}
+    500: LinkedInInternalServiceError,
+}
 
 
 def get_exception_for_error_code(error_code):
     return ERROR_CODE_EXCEPTION_MAPPING.get(error_code, LinkedInError)
+
 
 def raise_for_error(response):
     try:
@@ -71,15 +73,19 @@ def raise_for_error(response):
                 # us a 2xx response nor a response content.
                 return
             response = response.json()
-            if ('error' in response) or ('errorCode' in response):
-                message = '%s: %s' % (response.get('error', str(error)),
-                                      response.get('message', 'Unknown Error'))
-                error_code = response.get('status')
+            if ("error" in response) or ("errorCode" in response):
+                message = "%s: %s" % (
+                    response.get("error", str(error)),
+                    response.get("message", "Unknown Error"),
+                )
+                error_code = response.get("status")
                 ex = get_exception_for_error_code(error_code)
-                if response.status_code == 401 and 'Expired access token' in message:
-                    LOGGER.error("Your access_token has expired as per LinkedIn’s security \
+                if response.status_code == 401 and "Expired access token" in message:
+                    LOGGER.error(
+                        "Your access_token has expired as per LinkedIn’s security \
                         policy. \n Please re-authenticate your connection to generate a new token \
-                        and resume extraction.")
+                        and resume extraction."
+                    )
                 raise ex(message)
             else:
                 raise LinkedInError(error)
@@ -88,9 +94,7 @@ def raise_for_error(response):
 
 
 class LinkedinClient(object):
-    def __init__(self,
-                 access_token,
-                 user_agent=None):
+    def __init__(self, access_token, user_agent=None):
         self.__access_token = access_token
         self.__user_agent = user_agent
         self.__session = requests.Session()
@@ -104,63 +108,62 @@ class LinkedinClient(object):
     def __exit__(self, exception_type, exception_value, traceback):
         self.__session.close()
 
-    @backoff.on_exception(backoff.expo,
-                          Server5xxError,
-                          max_tries=5,
-                          factor=2)
+    @backoff.on_exception(backoff.expo, Server5xxError, max_tries=5, factor=2)
     def check_access_token(self):
         if self.__access_token is None:
-            raise Exception('Error: Missing access_token.')
+            raise Exception("Error: Missing access_token.")
         headers = {}
         if self.__user_agent:
-            headers['User-Agent'] = self.__user_agent
-        headers['Authorization'] = 'Bearer {}'.format(self.__access_token)
-        headers['Accept'] = 'application/json'
+            headers["User-Agent"] = self.__user_agent
+        headers["Authorization"] = "Bearer {}".format(self.__access_token)
+        headers["Accept"] = "application/json"
         response = self.__session.get(
             # Simple endpoint that returns 1 Account record (to check API/token access):
-            url='https://api.linkedin.com/v2/adAccountsV2?q=search&start=0&count=1',
-            headers=headers)
+            url="https://api.linkedin.com/v2/adAccountsV2?q=search&start=0&count=1",
+            headers=headers,
+        )
         if response.status_code != 200:
-            LOGGER.error('Error status_code = {}'.format(response.status_code))
+            LOGGER.error("Error status_code = {}".format(response.status_code))
             raise_for_error(response)
         else:
             resp = response.json()
-            if 'elements' in resp:
+            if "elements" in resp:
                 return True
             else:
                 return False
 
-
-    @backoff.on_exception(backoff.expo,
-                          (Server5xxError, ConnectionError, Server429Error),
-                          max_tries=5,
-                          factor=2)
+    @backoff.on_exception(
+        backoff.expo,
+        (Server5xxError, ConnectionError, Server429Error),
+        max_tries=5,
+        factor=2,
+    )
     def request(self, method, url=None, path=None, **kwargs):
         if not self.__verified:
             self.__verified = self.check_access_token()
 
         if not url and self.__base_url is None:
-            self.__base_url = 'https://api.linkedin.com/v2'
+            self.__base_url = "https://api.linkedin.com/v2"
 
         if not url and path:
-            url = '{}/{}'.format(self.__base_url, path)
+            url = "{}/{}".format(self.__base_url, path)
 
-        if 'endpoint' in kwargs:
-            endpoint = kwargs['endpoint']
-            del kwargs['endpoint']
+        if "endpoint" in kwargs:
+            endpoint = kwargs["endpoint"]
+            del kwargs["endpoint"]
         else:
             endpoint = None
 
-        if 'headers' not in kwargs:
-            kwargs['headers'] = {}
-        kwargs['headers']['Authorization'] = 'Bearer {}'.format(self.__access_token)
-        kwargs['headers']['Accept'] = 'application/json'
+        if "headers" not in kwargs:
+            kwargs["headers"] = {}
+        kwargs["headers"]["Authorization"] = "Bearer {}".format(self.__access_token)
+        kwargs["headers"]["Accept"] = "application/json"
 
         if self.__user_agent:
-            kwargs['headers']['User-Agent'] = self.__user_agent
+            kwargs["headers"]["User-Agent"] = self.__user_agent
 
-        if method == 'POST':
-            kwargs['headers']['Content-Type'] = 'application/json'
+        if method == "POST":
+            kwargs["headers"]["Content-Type"] = "application/json"
 
         with metrics.http_request_timer(endpoint) as timer:
             response = self.__session.request(method, url, **kwargs)
@@ -175,7 +178,7 @@ class LinkedinClient(object):
         return response.json()
 
     def get(self, url=None, path=None, **kwargs):
-        return self.request('GET', url=url, path=path, **kwargs)
+        return self.request("GET", url=url, path=path, **kwargs)
 
     def post(self, url=None, path=None, **kwargs):
-        return self.request('POST', url=url, path=path, **kwargs)
+        return self.request("POST", url=url, path=path, **kwargs)
