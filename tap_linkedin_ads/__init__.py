@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+# type: ignore
 import singer
 from singer import utils
 from tap_linkedin_ads.client import LinkedinClient
