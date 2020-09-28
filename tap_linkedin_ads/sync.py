@@ -37,16 +37,12 @@ def write_bookmark(state, stream, value):
 
 def unixseconds_to_datetime(ms: str) -> datetime.datetime:
     try:
-
-        ms = int(ms)
+        milliseconds = int(ms)
+        return datetime.datetime.fromtimestamp(
+            milliseconds / 1000.0, datetime.timezone.utc
+        )
     except ValueError:
         return strptime_to_utc(ms)
-
-    return (
-        datetime.datetime.fromtimestamp(ms / 1000.0, datetime.timezone.utc)
-        if ms
-        else None
-    )
 
 
 def process_records(
