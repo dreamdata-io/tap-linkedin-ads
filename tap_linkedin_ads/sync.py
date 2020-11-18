@@ -382,6 +382,7 @@ def sync(client, config, state):
                         "dateRange.end.day": now.day,
                         "dateRange.end.month": now.month,
                         "dateRange.end.year": now.year,
+                        "fields":"pivotValues,impressions,clicks,likes,dateRange,videoStarts,videoViews,costInLocalCurrency,reactions,sends,shares,totalEngagements,pivot,pivotValue",
                     },
                     "data_key": "elements",
                     "bookmark_field": "end_at",
