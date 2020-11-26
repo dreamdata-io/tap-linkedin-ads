@@ -72,7 +72,9 @@ def process_records(
                 # # Keep only records whose bookmark is after the last_datetime
                 if bookmark_value >= strptime_to_utc(last_datetime):
                     write_record(
-                        stream_name, record, time_extracted=time_extracted,
+                        stream_name,
+                        record,
+                        time_extracted=time_extracted,
                     )
                     counter.increment()
             else:
@@ -382,7 +384,7 @@ def sync(client, config, state):
                         "dateRange.end.day": now.day,
                         "dateRange.end.month": now.month,
                         "dateRange.end.year": now.year,
-                        "fields":"pivotValues,impressions,clicks,likes,dateRange,videoStarts,videoViews,costInLocalCurrency,reactions,sends,shares,totalEngagements,pivot,pivotValue",
+                        "fields": "pivotValues,impressions,clicks,likes,dateRange,videoStarts,videoViews,costInLocalCurrency,reactions,sends,shares,totalEngagements,pivot,pivotValue",
                     },
                     "data_key": "elements",
                     "bookmark_field": "end_at",
@@ -452,4 +454,3 @@ def sync(client, config, state):
         update_currently_syncing(state, None)
         LOGGER.info("Synced: {}, total_records: {}".format(stream_name, total_records))
         LOGGER.info("FINISHED Syncing: {}".format(stream_name))
-
