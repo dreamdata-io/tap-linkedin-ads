@@ -3,7 +3,8 @@
 # type: ignore
 import singer
 from singer import utils
-from tap_linkedin_ads.client import LinkedinClient
+from typing import Dict, Optional, List
+from client import LinkedinClient
 from tap_linkedin_ads.sync import sync
 
 LOGGER = singer.get_logger()
@@ -20,22 +21,39 @@ REQUIRED_CONFIG_KEYS = [
 
 @singer.utils.handle_top_exception(LOGGER)
 def main():
-
     parsed_args = singer.utils.parse_args(REQUIRED_CONFIG_KEYS)
+    state = parsed_args.state or {}
+    tap(client_id, client_secret, refresh_token, user_agent, state)
 
-    client_id = parsed_args.config["client_id"]
-    client_secret = parsed_args.config["client_secret"]
-    refresh_token = parsed_args.config["refresh_token"]
-    user_agent = parsed_args.config["user_agent"]
+
+def tap(config: Dict, state: Optional[Dict]):
+    print(config)
+    client_id = config["client_id"]
+    client_secret = config["client_secret"]
+    refresh_token = config["refresh_token"]
+    user_agent = config["user_agent"]
+    
+    # if no accounts have been enabled
+    # then some requests will fail
+    # - therefore we abort here
+    accounts: List[str] = config.get("accounts", []):
+    if not accounts:
+        return
 
     with LinkedinClient(client_id, client_secret, refresh_token, user_agent) as client:
-        state = {}
-        if parsed_args.state:
-            state = parsed_args.state
         sync(
-            client=client, config=parsed_args.config, state=state,
+            client=client,
+            config=config,
+            state=state,
         )
 
 
 if __name__ == "__main__":
-    main()
+    import json
+
+    with open("config.json") as fp:
+        config = json.load(fp)
+    with open("state.json") as fp:
+        state = json.load(fp)
+
+    tap(config, state)
