@@ -32,11 +32,11 @@ def tap(config: Dict, state: Optional[Dict]):
     client_secret = config["client_secret"]
     refresh_token = config["refresh_token"]
     user_agent = config["user_agent"]
-    
+
     # if no accounts have been enabled
     # then some requests will fail
     # - therefore we abort here
-    accounts: List[str] = config.get("accounts", []):
+    accounts: List[str] = config.get("accounts", [])
     if not accounts:
         return
 
