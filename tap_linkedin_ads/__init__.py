@@ -3,7 +3,7 @@
 # type: ignore
 import singer
 from singer import utils
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from client import LinkedinClient
 from tap_linkedin_ads.sync import sync
 
@@ -32,6 +32,13 @@ def tap(config: Dict, state: Optional[Dict]):
     client_secret = config["client_secret"]
     refresh_token = config["refresh_token"]
     user_agent = config["user_agent"]
+    
+    # if no accounts have been enabled
+    # then some requests will fail
+    # - therefore we abort here
+    accounts: List[str] = config.get("accounts", []):
+    if not accounts:
+        return
 
     with LinkedinClient(client_id, client_secret, refresh_token, user_agent) as client:
         sync(
