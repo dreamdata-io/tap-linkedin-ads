@@ -4,7 +4,7 @@
 import singer
 from singer import utils
 from typing import Dict, Optional, List
-from client import LinkedinClient
+from tap_linkedin_ads.client import LinkedinClient
 from tap_linkedin_ads.sync import sync
 
 LOGGER = singer.get_logger()
