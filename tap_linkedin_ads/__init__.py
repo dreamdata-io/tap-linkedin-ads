@@ -23,7 +23,7 @@ REQUIRED_CONFIG_KEYS = [
 def main():
     parsed_args = singer.utils.parse_args(REQUIRED_CONFIG_KEYS)
     state = parsed_args.state or {}
-    tap(client_id, client_secret, refresh_token, user_agent, state)
+    tap(parsed_args.config, state)
 
 
 def tap(config: Dict, state: Optional[Dict]):
