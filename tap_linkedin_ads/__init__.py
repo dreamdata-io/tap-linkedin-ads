@@ -2,6 +2,7 @@
 
 # type: ignore
 import singer
+import json
 from singer import utils
 from typing import Dict, Optional, List
 from tap_linkedin_ads.client import LinkedinClient
@@ -27,7 +28,7 @@ def main():
 
 
 def tap(config: Dict, state: Optional[Dict]):
-    print(config)
+    print(json.dumps(config))
     client_id = config["client_id"]
     client_secret = config["client_secret"]
     refresh_token = config["refresh_token"]
