@@ -50,8 +50,6 @@ def tap(config: Dict, state: Optional[Dict]):
 
 
 if __name__ == "__main__":
-    import json
-
     with open("config.json") as fp:
         config = json.load(fp)
     with open("state.json") as fp:
