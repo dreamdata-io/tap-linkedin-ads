@@ -28,7 +28,7 @@ def main():
 
 
 def tap(config: Dict, state: Optional[Dict]):
-    print(json.dumps(config))
+    LOGGER.info(json.dumps(config))
     client_id = config["client_id"]
     client_secret = config["client_secret"]
     refresh_token = config["refresh_token"]
