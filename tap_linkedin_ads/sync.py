@@ -225,7 +225,7 @@ def sync_endpoint(
                         child_total_records, child_batch_bookmark_value = sync_ad_analytics(
                             client=client,
                             state=state,
-                            start_date=start_date,
+                            last_datetime=last_datetime or start_date,
                             stream_name=child_stream_name,
                             path=child_path,
                             endpoint_config=child_endpoint_config,
@@ -239,7 +239,7 @@ def sync_endpoint(
                             parent=child_endpoint_config.get("parent"),
                             parent_id=parent_id,
                         )
-                    else:
+                    else: 
                         child_total_records, child_batch_bookmark_value = sync_endpoint(
                             client=client,
                             state=state,
@@ -518,15 +518,13 @@ def merge_responses(data):
                 full_records[primary_key] = element
     return full_records
 
-def sync_ad_analytics(client, state, start_date, stream_name, path, endpoint_config, data_key, static_params,
+def sync_ad_analytics(client, state, last_datetime, stream_name, path, endpoint_config, data_key, static_params,
                       bookmark_query_field=None, bookmark_field=None, id_fields=None, parent=None, parent_id=None):
     # pylint: disable=too-many-branches,too-many-statements,unused-argument
 
-
-    last_timestamp = get_bookmark(state, stream_name, start_date)
-    last_datetime_dt = strptime_to_utc(last_timestamp)
-
-    window_start_date = last_datetime_dt.date()
+    last_datetime = get_bookmark(state, stream_name, last_datetime)
+    max_bookmark_value = strptime_to_utc(last_datetime)
+    window_start_date = max_bookmark_value.date()
     window_end_date = window_start_date + timedelta(days=DATE_WINDOW_SIZE)
     today = datetime.date.today()
 
@@ -603,8 +601,8 @@ def sync_ad_analytics(client, state, start_date, stream_name, path, endpoint_con
                 records=transformed_data,
                 time_extracted=time_extracted,
                 bookmark_field=bookmark_field,
-                max_bookmark_value=last_datetime_dt,
-                last_datetime=start_date,
+                max_bookmark_value=max_bookmark_value,
+                last_datetime=last_datetime,
                 parent=parent,
                 parent_id=parent_id,
             )
@@ -617,7 +615,7 @@ def sync_ad_analytics(client, state, start_date, stream_name, path, endpoint_con
         if window_start_date == window_end_date:
             break
 
-    return total_records, last_datetime_dt
+    return total_records, max_bookmark_value
 
 def sync_analytics_endpoint(client, stream_name, path, query_string):
     page = 1
