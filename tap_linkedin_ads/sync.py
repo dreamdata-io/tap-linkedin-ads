@@ -225,7 +225,7 @@ def sync_endpoint(
                         child_total_records, child_batch_bookmark_value = sync_ad_analytics(
                             client=client,
                             state=state,
-                            last_datetime=last_datetime,
+                            last_datetime=last_datetime or start_date,
                             stream_name=child_stream_name,
                             path=child_path,
                             endpoint_config=child_endpoint_config,
