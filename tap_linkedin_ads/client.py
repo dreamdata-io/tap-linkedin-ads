@@ -169,7 +169,7 @@ class LinkedinClient(object):
             return response.json()
         except:
             LOGGER.exception(
-                "Got bad json response from url: '{url}' response: {response.text}")
+                f"Got bad json response from url: '{url}' response: {response.text}")
             raise
 
     def get(self, url=None, path=None, **kwargs):
