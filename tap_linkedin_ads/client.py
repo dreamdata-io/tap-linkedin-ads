@@ -75,14 +75,15 @@ def raise_for_error(response):
             error_string = str(error)
             error_message = response.text
             if response.status_code == 401 and "Expired access token" in response.text:
-                error_message=(
+                error_message = (
                     "Your access_token has expired as per LinkedIn’s security "
                     "policy. \n Please re-authenticate your connection to generate a new token "
                     "and resume extraction."
                 )
 
-            exception_class = get_exception_for_error_code(response.status_code)
-            raise exception_class('{}: {}'.format(error_string,error_message))
+            exception_class = get_exception_for_error_code(
+                response.status_code)
+            raise exception_class('{}: {}'.format(error_string, error_message))
         except (ValueError, TypeError):
             raise LinkedInError(error)
 
@@ -145,7 +146,8 @@ class LinkedinClient(object):
 
         if "headers" not in kwargs:
             kwargs["headers"] = {}
-        kwargs["headers"]["Authorization"] = "Bearer {}".format(self.__access_token)
+        kwargs["headers"]["Authorization"] = "Bearer {}".format(
+            self.__access_token)
         kwargs["headers"]["Accept"] = "application/json"
 
         if self.__user_agent:
@@ -163,8 +165,12 @@ class LinkedinClient(object):
 
         if response.status_code != 200:
             raise_for_error(response)
-
-        return response.json()
+        try:
+            return response.json()
+        except:
+            LOGGER.exception(
+                "Got bad json response from url: '{url}' response: {response.text}")
+            raise
 
     def get(self, url=None, path=None, **kwargs):
         return self.request("GET", url=url, path=path, **kwargs)
